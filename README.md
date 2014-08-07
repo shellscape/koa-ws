@@ -2,7 +2,7 @@
 
 Empower your koa.js application with realtime.
 
-Attaches WebSocket server (using ws) and connects your sessions with your sockets.
+Attaches WebSocket server (using ws) and connects your sessions with your sockets. Uses the jsonrpc 2.0 protocol.
 
 ## Usage
 
@@ -10,7 +10,7 @@ Attaches WebSocket server (using ws) and connects your sessions with your socket
 
     npm install koa-ws
 
-### Examples
+### Get started
 
 How to add to your app:
 
@@ -52,9 +52,9 @@ Register a namespace:
 
 On the client you can then emit:
 
-    * `user:create`
-    * `user:update`
-    * `user:remove`
+* `user:create`
+* `user:update`
+* `user:remove`
 
 
 ## License
