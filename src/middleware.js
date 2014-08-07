@@ -1,203 +1,252 @@
+var co = require('co');
+var fs = require('fs');
+var path = require('path');
+var objectAssign = require('object-assign');
+var replaceStream = require('replacestream');
 var WebSocketServer = require('ws').Server;
 var cookieHelper = require('koa-ws-cookie-helper');
-var co = require('co');
 var debug = require('debug')('koa:ws');
 
-module.exports = function (app) {
+/**
+ * KoaWebSocketServer object
+ * @param app
+ * @param options
+ */
+function KoaWebSocketServer (app, options) {
+    // Save ref to app
+    this.app = app;
 
-    // Attach WebSocketServer to koa app
-    var server = app.ws = app.io = new WebSocketServer({ server: app.server });
+    // Create WebSocketServer
+    this.server = new WebSocketServer({ server: app.server });
 
     // Container for methods
-    server.methods = {};
+    this.methods = {};
 
-    // Session to sockets mapping
-    server.sockets = {};
-    server.sessions = {};
+    // Container for sockets
+    this.sockets = {};
 
-    /**
-     * Register a handler generator for method
-     * @param method
-     * @param generator
-     * @param expose
-     */
-    server.register = function (method, generator, expose) {
-        if (typeof method === 'object') {
-            for (var m in method) {
-                server.register(m, method[m]);
+    // Session to socket mapping
+    this.sessions = {};
+
+    // Listen to connection
+    this.server.on('connection', this.onConnection.bind(this));
+}
+
+/**
+ * On new connection
+ * @param socket
+ */
+KoaWebSocketServer.prototype.onConnection = function (socket) {
+    var server = this.server;
+    var methods = this.methods;
+    var sockets = this.sockets;
+    var sessions = this.sessions;
+
+    socket.respond = function (method, params) {
+        try {
+            var payload = { 
+                jsonrpc: '2.0', 
+                method: method
+            };
+            if (params) {
+                payload.params = params;
             }
-        } else if (typeof generator === 'object') {
-            for (var m in generator) {
-                server.register(method + ':' + m, generator[m]);
-            }
-        } else if (typeof method === 'string') {
-            debug('Registering method: %s', method);
-            generator.expose = expose || false;
-            server.methods[method] = co(generator);
+            debug('→ %s: %o', payload.method, payload.params);
+            socket.send(JSON.stringify(payload));
+        } catch (e) {
+            console.error('Something went wrong: ', e.stack);
         }
     };
 
-    /**
-     * Broadcast to all connected sockets
-     * @param method string
-     * @param params object
-     */
-    server.broadcast = function(method, params) {
-        for (var i in this.clients) {
-            this.clients[i].respond(method, params, function (err) {
-                debug('Could not send message', data, err);
-            });
+    socket.result = function (result) {
+        try {
+            var payload = {
+                jsonrpc: '2.0', 
+                result: result,
+                id: this.currentId
+            };
+            debug('→ result for id %s: %o', payload.id, payload.result);
+            socket.send(JSON.stringify(payload));
+        } catch (e) {
+            console.error('Something went wrong: ', e.stack);
+        }
+    }
+
+    socket.error = function (code, message) {
+        try {
+            var data = {
+                jsonrpc: '2.0',
+                error: {
+                    code: code,
+                    message: message
+                },
+                id: this.currentId
+            };
+            debug('→', data);
+            socket.send(JSON.stringify(data));
+        }  catch (e) {
+            console.error('Something went wrong: ', e.stack);
         }
     };
 
-    /**
-     * On new connection
-     * @param socket
-     */
-    server.on('connection', function (socket) {
-
-        socket.respond = function (method, params) {
-            try {
-                var data = { 
-                    jsonrpc: '2.0', 
-                    method: method
-                };
-                if (params) {
-                    data.params = params;
-                }
-                debug('→ %s: %o', data.method, data.params);
-                socket.send(JSON.stringify(data));
-            } catch (e) {
-                console.error('Something went wrong: ', e.stack);
-            }
-        };
-
-        socket.result = function (result) {
-            try {
-                var data = {
-                    jsonrpc: '2.0', 
-                    result: result,
-                    id: this.currentId
-                };
-                debug('→ result for id %s: %o', data.id, data.result);
-                socket.send(JSON.stringify(data));
-            } catch (e) {
-                console.error('Something went wrong: ', e.stack);
-            }
-        }
-
-        socket.error = function (code, message) {
-            try {
-                var data = {
-                    jsonrpc: '2.0',
-                    error: {
-                        code: code,
-                        message: message
-                    },
-                    id: this.currentId
-                };
-                debug('→', data);
-                socket.send(JSON.stringify(data));
-            }  catch (e) {
-                console.error('Something went wrong: ', e.stack);
-            }
-        };
-
-        socket.on('close', function () {
-            debug('Client disconnected');
-            if (socket.session && Array.isArray(server.sockets[socket.session.id])) {
-                server.sockets[socket.session.id].splice(
-                    server.sockets[socket.session.id].indexOf(socket),
-                    1
-                );
-            }
-        });
-
-        socket.on('error', function (err) {
-            debug('Error occurred:', err);
-        });
-
-        socket.on('message', function (message) {
-            try {
-                var payload = JSON.parse(message);
-            } catch (e) {
-                debug('Parse error: %s', e.stack);
-                socket.error(-32700, 'Parse error');
-                return;
-            }
-
-            if (!payload.jsonrpc && payload.jsonrpc !== '2.0') {
-                debug('Wrong protocol: %s', payload.jsonrpc);
-                socket.error(-32600, 'Invalid Request');
-                return;
-            }
-
-            if (!payload.method) {
-                debug('Missing method: %o', payload);
-                socket.error(-32600, 'Invalid Request');
-                return;
-            }
-
-            if (typeof payload.params !== 'object') {
-                debug('Invalid params: %o', payload.params);
-                socket.error(-32602, 'Invalid params');
-                return;
-            }
-
-            debug('← %s: %o', payload.method, payload.params);
-
-            if (typeof server.methods[payload.method] === 'function') {
-                var request = {
-                    currentId: payload.id,
-                    method: payload.method,
-                    params: payload.params,
-                    session: socket.session
-                };
-                request.error = socket.error.bind(request);
-                request.result = socket.result.bind(request);
-                request.respond = socket.result.bind(request);
-                try {
-                    server.methods[payload.method].apply(request);
-                } catch (e) {
-                    debug('Internal error: %s', e.stack);
-                    socket.error(-32603, 'Internal error').apply(request);
-                }
-            } else {
-                debug('Method not found: %s', payload.method, payload.params);
-                socket.error(-32601, 'Method not found');
-            }
-        });
-
-        // Let's try and connect the socket to session
-        var sessionId = cookieHelper.get(socket, 'koa.sid', app.keys);
-        if (sessionId) {
-            if (typeof server.sockets[sessionId] === 'undefined') {
-                server.sockets[sessionId] = [];
-            }
-            server.sockets[sessionId].push(socket);
-
-            if (app.sessionStore) {
-                (co(function* () {
-                    socket.session =  yield app.sessionStore.get(sessionId);
-                    socket.respond('session', socket.session);   
-                })());
-            }
+    socket.on('close', function () {
+        debug('Client disconnected');
+        if (socket.session && Array.isArray(sockets[socket.session.id])) {
+            sockets[socket.session.id].splice(
+                sockets[socket.session.id].indexOf(socket),
+                1
+            );
         }
     });
 
-    return function* (next) {
-        console.error('WTF IS THIS SHIT?');
-        if (typeof ws.sockets[this.session.id] === 'undefined') {
-            ws.sockets[this.session.id] = [];
+    socket.on('error', function (err) {
+        debug('Error occurred:', err);
+    });
+
+    socket.on('message', function (message) {
+        try {
+            var payload = JSON.parse(message);
+        } catch (e) {
+            debug('Parse error: %s', e.stack);
+            socket.error(-32700, 'Parse error');
+            return;
         }
-        ws.sessions[this.session.id] = this.session;
-        this.sockets = ws.sockets[this.session.id];
 
-        console.error('SESSION:', this.session);
+        if (!payload.jsonrpc && payload.jsonrpc !== '2.0') {
+            debug('Wrong protocol: %s', payload.jsonrpc);
+            socket.error(-32600, 'Invalid Request');
+            return;
+        }
 
-        this.ws.route = function (method) {
+        if (!payload.method) {
+            debug('Missing method: %o', payload);
+            socket.error(-32600, 'Invalid Request');
+            return;
+        }
+
+        if (typeof payload.params !== 'object') {
+            debug('Invalid params: %o', payload.params);
+            socket.error(-32602, 'Invalid params');
+            return;
+        }
+
+        debug('← %s: %o', payload.method, payload.params);
+
+        if (typeof methods[payload.method] === 'function') {
+            var request = {
+                currentId: payload.id,
+                method: payload.method,
+                params: payload.params,
+                session: socket.session
+            };
+            request.error = socket.error.bind(request);
+            request.result = socket.result.bind(request);
+            request.respond = socket.result.bind(request);
+            try {
+                methods[payload.method].apply(request);
+            } catch (e) {
+                debug('Internal error: %s', e.stack);
+                socket.error(-32603, 'Internal error').apply(request);
+            }
+        } else {
+            debug('Method not found: %s', payload.method, payload.params);
+            socket.error(-32601, 'Method not found');
+        }
+    });
+
+    // Let's try and connect the socket to session
+    var sessionId = cookieHelper.get(socket, 'koa.sid', this.app.keys);
+    if (sessionId) {
+        if (typeof this.sockets[sessionId] === 'undefined') {
+            this.sockets[sessionId] = [];
+        }
+        this.sockets[sessionId].push(socket);
+
+        if (this.app.sessionStore) {
+            var _this = this;
+            (co(function* () {
+                socket.session = yield _this.app.sessionStore.get(sessionId);
+                socket.respond('session', socket.session);   
+            })());
+        }
+    }
+}
+
+/**
+ * Register a handler generator for method
+ * @param method
+ * @param generator
+ * @param expose
+ */
+KoaWebSocketServer.prototype.register = function (method, generator, expose) {
+    if (typeof method === 'object') {
+        for (var m in method) {
+            this.register(m, method[m]);
+        }
+    } else if (typeof generator === 'object') {
+        for (var m in generator) {
+            this.register(method + ':' + m, generator[m]);
+        }
+    } else if (typeof method === 'string') {
+        debug('Registering method: %s', method);
+        generator.expose = expose || false;
+        this.methods[method] = co(generator);
+    }
+};
+
+/**
+ * Broadcast to all connected sockets
+ * @param method string
+ * @param params object
+ */
+KoaWebSocketServer.prototype.broadcast = function (method, params) {
+    for (var i in this.server.clients) {
+        this.server.clients[i].respond(method, params, function (err) {
+            debug('Could not send message', data, err);
+        });
+    }
+}
+
+
+
+module.exports = function (app, passedOptions) {
+    // Default options
+    var options = {
+        serveClientFile: true,
+        clientFilePath: '/koaws.js',
+    };
+    // Override with passed options
+    objectAssign(options, passedOptions || {});
+
+    var oldListen = app.listen;
+    app.listen = function () {
+        debug('Attaching server...')
+        app.server = oldListen.apply(app, arguments);
+        app.ws = app.io = new KoaWebSocketServer(app, options);
+        return app;
+    };
+
+    return function* (next) {
+        if (options.serveClientFile && this.method === 'GET' && this.path === options.clientFilePath) {
+            this.set('Content-Type', 'application/javascript');
+            this.body = fs.createReadStream(__dirname + '/client.js');
+            return;
+        }
+
+        if (this.session && this.session.id) {
+            console.log(app.ws);
+            if (typeof app.ws.sockets[this.session.id] === 'undefined') {
+                ws.sockets[this.session.id] = [];
+            }
+            app.ws.sessions[this.session.id] = this.session;
+            this.sockets = app.ws.sockets[this.session.id];
+        }
+
+        this.ws = this.io = {};
+        this.ws.route = this.io.route = function (method) {
             // TODO: Implement routing
         }
-        yield* next;
+
+        yield next;
     };
 };
