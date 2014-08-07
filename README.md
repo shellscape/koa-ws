@@ -2,7 +2,15 @@
 
 Empower your koa.js application with realtime.
 
-Attaches WebSocket server (using ws) and connects your sessions with your sockets. Uses the jsonrpc 2.0 protocol.
+Attaches WebSocket server (using ws) and connects your sessions with your sockets.
+Uses the jsonrpc 2.0 protocol per default.
+
+## Features
+
+* Uses jsonrpc 2.0 protocol per default
+* Uses generators as method handlers
+* Simple API to register namespaced methods
+* Connects your sockets to the users session
 
 ## Usage
 
