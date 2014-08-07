@@ -1,0 +1,28 @@
+{
+  "name": "koa-ws",
+  "version": "0.1.0",
+  "keywords": [
+    "koa",
+    "middleware",
+    "websocket",
+    "session"
+  ],
+  "description": "integrates ws with koa, featuring shared sessions and json-rpc 2.0 protocol",
+  "main": "./src/middleware.js",
+  "browser": "./src/client.js",
+  "scripts": {
+    "test": "mocha --harmony"
+  },
+  "author": "Marcus Ekwall <marcus.ekwall@gmail.com>",
+  "license": "ISC",
+  "peerDependencies": {
+    "koa": "^0.8.2"
+  },
+  "dependencies": {
+    "co": "^3.1.0",
+    "debug": "^1.0.4",
+    "keygrip": "^1.0.1",
+    "koa-ws-cookie-helper": "^1.0.0",
+    "ws": "^0.4.32"
+  }
+}
