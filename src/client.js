@@ -1,10 +1,30 @@
+(function(){
+
 'use strict';
 
+var debug, hostname, port;
+
 // Debug output
-var debug = require('debug')('koa:ws');
+try {
+    debug = require('debug')('koa:ws');
+} catch (e) {
+    debug = console.log.bind(console);
+}
+
+if (typeof WS_HOSTNAME !== 'undefined') {
+    hostname = WS_HOSTNAME;
+} else {
+    hostname = location.hostname;
+}
+
+if (typeof WS_HOSTNAME !== 'undefined') {
+    port = WS_PORT;
+} else {
+    port = 3000;
+}
 
 // Initialize WebSocket client
-var client = new WebSocket('ws://' + WS_HOSTNAME + ':' + WS_PORT);
+var client = new WebSocket('ws://' + hostname + ':' + port);
 
 // Queue list for messages
 var messageQueue = [];
@@ -77,10 +97,10 @@ client.emit = function () {
     }
 
     if (cb) {
-        debug('Registering callback for id %s', id);
-        awaitingResults[id] = function () {
+        debug('Registering callback for id %s', payload.id);
+        awaitingResults[payload.id] = function () {
             cb.apply(this, arguments);
-            delete awaitingResults[id];
+            delete awaitingResults[payload.id];
         };
     }
 
@@ -128,4 +148,10 @@ client.on('message', function (e) {
 });
 
 // Expose the client
-module.exports = client;
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = client;
+} else {
+    window.koaws = client;
+}
+
+}.call(this));
