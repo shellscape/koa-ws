@@ -109,6 +109,8 @@ client.method = function () {
         }
     } else if (typeof arguments[1] === 'function') {
         cb = arguments[1];
+    } else {
+        payload.params = arguments[1];
     }
 
     if (cb) {
@@ -157,8 +159,10 @@ client.on('message', function (e) {
             callbacks[payload.method][i].apply(
                 client, [null, payload.params]);
         }
+    } else if (payload.error && payload.id) {
+        awaitingResults[payload.id].apply(client, [payload.error]);
     } else if (payload.error) {
-        console.error('Error %s: %s', payload.error.code, payload.error.message);
+        debug('Error %s: %s', payload.error.code, payload.error.message);
     }
 });
 
