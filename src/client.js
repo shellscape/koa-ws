@@ -13,8 +13,10 @@ try {
 
 if (typeof WS_HOSTNAME !== 'undefined') {
     hostname = WS_HOSTNAME;
-} else {
+} else if (typeof location !== 'undefined') {
     hostname = location.hostname;
+} else {
+    hostname = 'localhost';
 }
 
 if (typeof WS_HOSTNAME !== 'undefined') {
@@ -23,7 +25,12 @@ if (typeof WS_HOSTNAME !== 'undefined') {
     port = 3000;
 }
 
+if (typeof WebSocket === 'undefined') {
+    var WebSocket = require('ws');
+}
+
 // Initialize WebSocket client
+debug('Connecting to server: ws://%s:%s', hostname, port);
 var client = new WebSocket('ws://' + hostname + ':' + port);
 
 // Queue list for messages
@@ -40,46 +47,54 @@ var callbacks = client._events = {
     message: []
 };
 
-client.addListener = client.on = function (type, cb) {
-    if (callbacks[type]) {
-        callbacks[type].push(cb);
-    } else {
-        callbacks[type] = [cb];
-    }
-};
+if (!client.on)
+    client.addListener = client.on = function (type, cb) {
+        if (callbacks[type]) {
+            callbacks[type].push(cb);
+        } else {
+            callbacks[type] = [cb];
+        }
+    };
 
-client.once = function (type, cb) {
-    client.on(type, function onceFn () {
-        client.off(type, onceFn);
-        cb.apply(cb, arguments);
-    });
-};
+if (!client.once)
+    client.once = function (type, cb) {
+        client.on(type, function onceFn () {
+            client.off(type, onceFn);
+            cb.apply(cb, arguments);
+        });
+    };
 
-client.removeListener = client.off = function (type, cb) {
-    if (Array.isArray(callbacks[type])) {
-        var idx = callbacks[type].indexOf(cb);
-        if (idx !== -1) {
-            if (callbacks[type].length === 1) {
-                delete callbacks[type];
-            } else {
-                callbacks[type].splice(idx, 1);
+if (!client.off)
+    client.removeListener = client.off = function (type, cb) {
+        if (Array.isArray(callbacks[type])) {
+            var idx = callbacks[type].indexOf(cb);
+            if (idx !== -1) {
+                if (callbacks[type].length === 1) {
+                    delete callbacks[type];
+                } else {
+                    callbacks[type].splice(idx, 1);
+                }
             }
         }
-    }
-};
+    };
 
 // Add helper handlers for the folowing events
-['open', 'close', 'message']
-    .forEach(function (type, i) {
-        client['on' + type] = function () {
-            for (var i = 0, l = callbacks[type].length; i < l; i++) {
-                callbacks[type][i].apply(client, arguments);
+if (client._socket) {
+    ['open', 'close', 'message']
+        .forEach(function (type, i) {
+            return;
+            if (!client['on' + type]) {
+                client['on' + type] = function () {
+                    for (var i = 0, l = callbacks[type].length; i < l; i++) {
+                        callbacks[type][i].apply(client, arguments);
+                    }
+                };
             }
-        };
-    });
+        });
+}
 
-// Emit a message
-client.emit = function () {
+// Call a method
+client.method = function () {
     var cb = null;
     var payload = {
         jsonrpc: '2.0',
@@ -120,7 +135,7 @@ client.emit = function () {
 };
 
 client.on('open', function (e) {
-    debug('Webclient open');
+    debug('WebSocket open');
 
     if (messageQueue.length) {
         var payload;
@@ -132,7 +147,7 @@ client.on('open', function (e) {
 });
 
 client.on('message', function (e) {
-    var payload = JSON.parse(e.data);
+    var payload = JSON.parse(e.data || e);
     debug('Incoming message: %o', payload);
     if (payload.result && payload.id && awaitingResults[payload.id]) {
         debug('Got result for id %s, sending to callback', payload.id);

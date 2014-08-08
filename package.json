@@ -23,9 +23,6 @@
   "scripts": {
     "test": "mocha --harmony"
   },
-  "peerDependencies": {
-    "koa": "^0.8.2"
-  },
   "dependencies": {
     "co": "^3.1.0",
     "debug": "^1.0.4",
@@ -34,5 +31,11 @@
     "object-assign": "^0.3.1",
     "replacestream": "^0.1.3",
     "ws": "^0.4.32"
+  },
+  "devDependencies": {
+    "chai": "^1.9.1",
+    "co-mocha": "0.0.4",
+    "koa": "^0.8.2",
+    "mocha": "^1.21.4"
   }
 }
