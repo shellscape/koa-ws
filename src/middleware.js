@@ -116,33 +116,34 @@ KoaWebSocketServer.prototype.onConnection = function (socket) {
             return;
         }
 
+        var request = {
+            currentId: payload.id,
+            method: payload.method,
+            params: payload.params,
+            session: socket.session
+        };
+
         if (!payload.jsonrpc && payload.jsonrpc !== '2.0') {
             debug('Wrong protocol: %s', payload.jsonrpc);
-            socket.error(-32600, 'Invalid Request');
+            socket.error.apply(request, [-32600, 'Invalid Request']);
             return;
         }
 
         if (!payload.method) {
             debug('Missing method: %o', payload);
-            socket.error(-32600, 'Invalid Request');
+            socket.error.apply(request, [-32600, 'Invalid Request']);
             return;
         }
 
         if (payload.params && (typeof payload.params !== 'object' || !Array.isArray(payload.params))) {
             debug('Invalid params: %o', payload.params);
-            socket.error(-32602, 'Invalid params');
+            socket.error.apply(request, [-32602, 'Invalid params']);
             return;
         }
 
         debug('← %s: %o', payload.method, payload.params);
 
         if (typeof methods[payload.method] === 'function') {
-            var request = {
-                currentId: payload.id,
-                method: payload.method,
-                params: payload.params,
-                session: socket.session
-            };
             request.error = socket.error.bind(request);
             request.result = socket.result.bind(request);
             request.respond = socket.result.bind(request);
@@ -150,11 +151,11 @@ KoaWebSocketServer.prototype.onConnection = function (socket) {
                 methods[payload.method].apply(request);
             } catch (e) {
                 debug('Internal error: %s', e.stack);
-                socket.error(-32603, 'Internal error').apply(request);
+                socket.error.apply(request, [-32603, 'Internal error']);
             }
         } else {
             debug('Method not found: %s', payload.method, payload.params);
-            socket.error(-32601, 'Method not found');
+            socket.error.apply(request, [-32601, 'Method not found']);
         }
     });
 
