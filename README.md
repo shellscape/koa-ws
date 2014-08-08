@@ -1,4 +1,4 @@
-# kao-ws
+# koa-ws
 
 > Empower your koa.js application with realtime.
 
