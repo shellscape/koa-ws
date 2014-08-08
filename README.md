@@ -1,4 +1,4 @@
-[![Build Status](https://secure.travis-ci.org/mekwall/koa-ws.png)](http://travis-ci.org/mekwall/koa-ws)
+[![Build Status](https://secure.travis-ci.org/mekwall/koa-ws.png)](http://travis-ci.org/mekwall/koa-ws) [![Coverage Status](https://img.shields.io/coveralls/mekwall/koa-ws.svg)](https://coveralls.io/r/mekwall/koa-ws)
 
 # koa-ws
 
