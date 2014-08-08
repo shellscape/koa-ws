@@ -16,9 +16,6 @@ function KoaWebSocketServer (app, options) {
     // Save ref to app
     this.app = app;
 
-    // Create WebSocketServer
-    this.server = new WebSocketServer({ server: app.server });
-
     // Container for methods
     this.methods = {};
 
@@ -27,6 +24,13 @@ function KoaWebSocketServer (app, options) {
 
     // Session to socket mapping
     this.sessions = {};
+}
+
+KoaWebSocketServer.prototype.listen = function (server) {
+    // Create WebSocketServer
+    this.server = new WebSocketServer({ 
+        server: server
+    });
 
     // Listen to connection
     this.server.on('connection', this.onConnection.bind(this));
@@ -124,7 +128,7 @@ KoaWebSocketServer.prototype.onConnection = function (socket) {
             return;
         }
 
-        if (typeof payload.params !== 'object') {
+        if (payload.params && (typeof payload.params !== 'object' || !Array.isArray(payload.params))) {
             debug('Invalid params: %o', payload.params);
             socket.error(-32602, 'Invalid params');
             return;
@@ -207,8 +211,6 @@ KoaWebSocketServer.prototype.broadcast = function (method, params) {
     }
 }
 
-
-
 module.exports = function (app, passedOptions) {
     // Default options
     var options = {
@@ -222,9 +224,11 @@ module.exports = function (app, passedOptions) {
     app.listen = function () {
         debug('Attaching server...')
         app.server = oldListen.apply(app, arguments);
-        app.ws = app.io = new KoaWebSocketServer(app, options);
+        app.ws.listen(app.server);
         return app;
     };
+
+    app.ws = app.io = new KoaWebSocketServer(app, options);
 
     return function* (next) {
         if (options.serveClientFile && this.method === 'GET' && this.path === options.clientFilePath) {
@@ -234,7 +238,6 @@ module.exports = function (app, passedOptions) {
         }
 
         if (this.session && this.session.id) {
-            console.log(app.ws);
             if (typeof app.ws.sockets[this.session.id] === 'undefined') {
                 ws.sockets[this.session.id] = [];
             }
