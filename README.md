@@ -2,8 +2,6 @@
 
 Empower your koa.js application with realtime.
 
-Attaches WebSocket server (using ws) and connects your sessions with your sockets.
-
 ## Features
 
 * Uses jsonrpc 2.0 protocol per default
@@ -11,21 +9,26 @@ Attaches WebSocket server (using ws) and connects your sessions with your socket
 * Simple API to register namespaced methods
 * Connects your sockets to the users session
 
-## Usage
+## Quick start
 
 ### Installation
 
     npm install koa-ws
 
-### Get started
+### Usage
 
-How to add to your app:
+Add realtime to your koa app with a couple of lines:
 
     var koa = require('koa');
     var koaws = require('koa-ws');
     var app = koa();
 
-    app.use(koaws(app));
+    var options = {
+        serveClientFile: true,
+        clientFilePath: '/koaws.js'
+    };
+
+    app.use(koaws(app, options));
 
     app.listen(3000);
 
@@ -35,11 +38,24 @@ Register a simple method on the server:
         this.result('world!');
     });
 
-Call the method from the client (make sure to have the client file loaded):
+Make sure the client library is loaded in the browser. The path is `/koaws.js` per default but can easily be changed.
 
-    socket.emit('hello', function (err, result) {
+Call the method from the client:
+
+    koaws.emit('hello', function (err, result) {
+        if (err) console.error('Something went wrong', err);
         console.log(result) // should log 'world!'
     });
+
+#### Options
+
+##### serveClientFile (default: true)
+Will try and serve the client library file when `this.path` matches the `clientFilePath` option.
+
+##### clientFilePath ('/koaws.js')
+Defines the path to match when serving the client library.
+
+### Examples
 
 #### Namespaced methods
 
