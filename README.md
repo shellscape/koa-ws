@@ -1,3 +1,5 @@
+[![Build Status](https://secure.travis-ci.org/mekwall/koa-ws.png)](http://travis-ci.org/mekwall/koa-ws)
+
 # koa-ws
 
 > Empower your koa.js application with realtime.
