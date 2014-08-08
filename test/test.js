@@ -78,4 +78,36 @@ describe('koa-ws', function () {
         });
     });
 
+    it ('should return error -32700 parse error', function (done) {
+        client.once('message', function (payload) {
+            var payload = JSON.parse(payload);
+            expect(payload.error.code).to.be.equal(-32700);
+            done();
+        });
+        client.send({ foo: 'bar' });
+    });
+
+    it ('should return error -32600 invalid request', function (done) {
+        client.once('message', function (payload) {
+            var payload = JSON.parse(payload);
+            expect(payload.error.code).to.be.equal(-32600);
+            done();
+        });
+        client.send(JSON.stringify({ foo: 'bar' }));
+    });
+
+    it ('should return error -32602 invalid params', function (done) {
+        client.method('hello', {}, function (err, payload) {
+            expect(err.code).to.be.equal(-32602);
+            done();
+        });
+    });
+
+    it ('should return error -32601 method not found', function (done) {
+        client.method('foo', function (err, payload) {
+            expect(err.code).to.be.equal(-32601);
+            done();
+        });
+    });
+
 });
