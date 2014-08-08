@@ -1,6 +1,6 @@
 # kao-ws
 
-Empower your koa.js application with realtime.
+> Empower your koa.js application with realtime.
 
 ## Features
 
@@ -13,7 +13,7 @@ Empower your koa.js application with realtime.
 
 ### Installation
 
-    npm install koa-ws
+    $ npm install koa-ws
 
 ### Usage
 
@@ -52,7 +52,7 @@ Call the method from the client:
 ##### serveClientFile (default: true)
 Will try and serve the client library file when `this.path` matches the `clientFilePath` option.
 
-##### clientFilePath ('/koaws.js')
+##### clientFilePath (default: /koaws.js)
 Defines the path to match when serving the client library.
 
 ### Examples
