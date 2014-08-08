@@ -44,7 +44,7 @@ Make sure the client library is loaded in the browser. The path is `/koaws.js` p
 
 Call the method from the client:
 
-    koaws.emit('hello', function (err, result) {
+    koaws.method('hello', function (err, result) {
         if (err) console.error('Something went wrong', err);
         console.log(result) // should log 'world!'
     });
