@@ -8,13 +8,22 @@
     "session"
   ],
   "description": "integrates ws with koa, featuring shared sessions and json-rpc 2.0 protocol",
+  "author": "Marcus Ekwall <marcus.ekwall@gmail.com>",
+  "license": "ISC",
+  {
+    "bugs": {
+    "url": "https://github.com/mekwall/koa-ws/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mekwall/koa-ws.git"
+  },
+  "homepage": "https://github.com/mekwall/koa-webpack-dev-server",
   "main": "./src/middleware.js",
   "browser": "./src/client.js",
   "scripts": {
     "test": "mocha --harmony"
   },
-  "author": "Marcus Ekwall <marcus.ekwall@gmail.com>",
-  "license": "ISC",
   "peerDependencies": {
     "koa": "^0.8.2"
   },
