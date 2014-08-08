@@ -3,7 +3,6 @@ var chai = require('chai');
 var expect = chai.expect;
 
 var koa = require('koa');
-var middleware = require('../src/middleware');
 var app = koa();
 
 app.use(function* (next) {
@@ -18,6 +17,7 @@ app.use(function* (next) {
 describe('koa-ws', function () {
 
     it ('should be able to attach middleware to app', function () {
+        var middleware = require('../src/middleware');
         app.use(middleware(app));
         expect(app).to.have.property('ws');
     });
