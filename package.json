@@ -24,11 +24,6 @@
     "test": "mocha --harmony",
     "test-cov": "node --harmony node_modules/istanbul/lib/cli.js cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | node --harmony ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
   },
-  "config": {
-    "travis-cov": {
-      "threshold": 70
-    }
-  },
   "dependencies": {
     "co": "^3.1.0",
     "debug": "^1.0.4",
@@ -45,8 +40,9 @@
     "coveralls": "^2.11.1",
     "istanbul": "git://github.com/gotwarlost/istanbul.git#harmony",
     "koa": "^0.8.2",
+    "koa-generic-session": "^1.2.0",
     "mocha": "^1.21.4",
     "mocha-lcov-reporter": "0.0.1",
-    "travis-cov": "^0.2.5"
+    "supertest": "^0.13.0"
   }
 }
