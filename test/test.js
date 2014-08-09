@@ -2,10 +2,21 @@ var fs = require('fs');
 var chai = require('chai');
 var expect = chai.expect;
 
+var request = require('supertest');
 var koa = require('koa');
+var http = require('http');
+var session = require('koa-generic-session');
 var app = koa();
 
+app.keys = ['foo', 'bar'];
+app.sessionStore = new session.MemoryStore();
+app.use(session({
+    store: app.sessionStore,
+    allowEmpty: true
+}));
+
 app.use(function* (next) {
+    this.session.testing = true;
     if (this.path === '/') {
         this.set('Content-Type', 'text/html');
         this.body = fs.createReadStream(__dirname + '/test.html');
@@ -46,6 +57,9 @@ describe('koa-ws', function () {
             expect(app.ws.server._server).to.be.a('object');
             done();
         });
+
+        request(app.server)
+            .get('/');
     });
 
     it ('websocket client should be able to connect to server', function (done) {
@@ -97,7 +111,7 @@ describe('koa-ws', function () {
     });
 
     it ('should return error -32602 invalid params', function (done) {
-        client.method('hello', {}, function (err, payload) {
+        client.method('hello', 'world!', function (err, payload) {
             expect(err.code).to.be.equal(-32602);
             done();
         });
@@ -108,6 +122,17 @@ describe('koa-ws', function () {
             expect(err.code).to.be.equal(-32601);
             done();
         });
+    });
+
+    it ('should serve the client library at /koaws.js', function (done) {
+        request(app.server)
+            .get('/koaws.js')
+            .expect(200)
+            .expect('Content-Type', 'application/javascript')
+            .end(function (err, res) {
+                if (err) throw err;
+                done();
+            });
     });
 
 });
