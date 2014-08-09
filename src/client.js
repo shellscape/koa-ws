@@ -79,10 +79,9 @@ if (!client.off)
     };
 
 // Add helper handlers for the folowing events
-if (client._socket) {
+if (typeof client._socket === 'undefined') {
     ['open', 'close', 'message']
         .forEach(function (type, i) {
-            return;
             if (!client['on' + type]) {
                 client['on' + type] = function () {
                     for (var i = 0, l = callbacks[type].length; i < l; i++) {
@@ -102,15 +101,13 @@ client.method = function () {
         id: Math.random().toString(36).substr(2, 9) // Generate random id
     };
 
-    if (typeof arguments[1] === 'object') {
+    if (typeof arguments[1] !== 'function' && typeof arguments[1] !== 'undefined') {
         payload.params = arguments[1];
         if (typeof arguments[2] === 'function') {
             cb = arguments[2];
         }
     } else if (typeof arguments[1] === 'function') {
         cb = arguments[1];
-    } else {
-        payload.params = arguments[1];
     }
 
     if (cb) {
@@ -143,6 +140,7 @@ client.on('open', function (e) {
         var payload;
         while (messageQueue.length) {
             payload = messageQueue.shift();
+            debug('Sending message: %o', payload);
             client.send(JSON.stringify(payload));
         }
     }
@@ -151,18 +149,21 @@ client.on('open', function (e) {
 client.on('message', function (e) {
     var payload = JSON.parse(e.data || e);
     debug('Incoming message: %o', payload);
-    if (payload.result && payload.id && awaitingResults[payload.id]) {
-        debug('Got result for id %s, sending to callback', payload.id);
+    if (payload.error && payload.id && awaitingResults[payload.id]) {
+        debug('Got error for id %s, code %s: %s', payload.id, payload.error.code, payload.error.message);
+        awaitingResults[payload.id].apply(client, [payload.error]);
+    } else if (payload.error) {
+        debug('Error %s: %s', payload.error.code, payload.error.message);
+        //client.emit('error', payload.error);
+        //console.error('Error %s: %s', payload.error.code, payload.error.message);
+    } else if (payload.id && awaitingResults[payload.id]) {
+        debug('Got result for id %s: %s', payload.id, payload.results);
         awaitingResults[payload.id].apply(client, [null, payload.result]);
     } else if (payload.method && Array.isArray(callbacks[payload.method])) {
         for (var i = 0, l = callbacks[payload.method].length; i < l; i++) {
             callbacks[payload.method][i].apply(
                 client, [null, payload.params]);
         }
-    } else if (payload.error && payload.id) {
-        awaitingResults[payload.id].apply(client, [payload.error]);
-    } else if (payload.error) {
-        debug('Error %s: %s', payload.error.code, payload.error.message);
     }
 });
 

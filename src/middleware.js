@@ -122,6 +122,9 @@ KoaWebSocketServer.prototype.onConnection = function (socket) {
             params: payload.params,
             session: socket.session
         };
+        request.error = socket.error.bind(request);
+        request.result = socket.result.bind(request);
+        request.respond = socket.result.bind(request);
 
         if (!payload.jsonrpc && payload.jsonrpc !== '2.0') {
             debug('Wrong protocol: %s', payload.jsonrpc);
@@ -135,7 +138,7 @@ KoaWebSocketServer.prototype.onConnection = function (socket) {
             return;
         }
 
-        if (payload.params && (typeof payload.params !== 'object' || !Array.isArray(payload.params))) {
+        if (typeof payload.params !== 'undefined' && typeof payload.params !== 'object' && !Array.isArray(payload.params)) {
             debug('Invalid params: %o', payload.params);
             socket.error.apply(request, [-32602, 'Invalid params']);
             return;
@@ -144,9 +147,6 @@ KoaWebSocketServer.prototype.onConnection = function (socket) {
         debug('← %s: %o', payload.method, payload.params);
 
         if (typeof methods[payload.method] === 'function') {
-            request.error = socket.error.bind(request);
-            request.result = socket.result.bind(request);
-            request.respond = socket.result.bind(request);
             try {
                 methods[payload.method].apply(request);
             } catch (e) {
@@ -170,7 +170,7 @@ KoaWebSocketServer.prototype.onConnection = function (socket) {
         if (this.app.sessionStore) {
             var _this = this;
             (co(function* () {
-                socket.session = yield _this.app.sessionStore.get(sessionId);
+                socket.session = yield _this.app.sessionStore.get('koa:sess:' + sessionId);
                 socket.respond('session', socket.session);   
             })());
         }
