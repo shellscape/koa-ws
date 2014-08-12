@@ -40,7 +40,7 @@ Register a simple method on the server:
         this.result('world!');
     });
 
-Load the client library in the browser wiht require (`var koaws = require('koa-ws/client')`) or use the hosted version at `/koaws.js`.
+Load the client library in the browser with require (`var koaws = require('koa-ws/client')`) or use the hosted version at `/koaws.js`.
 
 Call the method from the client:
 
