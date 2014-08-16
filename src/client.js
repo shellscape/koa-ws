@@ -14,7 +14,7 @@ var Request = require('./request');
 // Debug output
 var debug;
 try {
-    debug = require('debug')('koa-ws');
+    debug = require('debug')('koa-ws:client');
 } catch (e) {
     debug = console.log.bind(console);
 }
@@ -86,7 +86,7 @@ Client.prototype.onClose = function (e) {
 Client.prototype.onMessage = function (e) {
     var payload = JSON.parse(e.data || e);
     if (payload.method) { 
-        var request = new Request(this, payload);
+        var request = new Request(this.socket, payload);
         if (typeof this._methods[payload.method] === 'undefined') {
             debug('← (%s) Missing handler', payload.method);
         } else if (payload.error) {
@@ -96,7 +96,7 @@ Client.prototype.onMessage = function (e) {
                 [payload.error, payload.params]
             ); 
         } else {
-            debug('← (%s) %o', payload.method, payload.params);
+            debug('← (%s) %s: %o', payload.id, payload.method, payload.params);
             this._methods[payload.method].apply(
                 request,
                 [null, payload.params]
@@ -187,7 +187,7 @@ Client.prototype.method = function () {
         this._messageQueue.push(payload);
     } else {
         try {
-            debug('→ %o', payload);
+            debug('→ (%s) %s: %o', payload.id, payload.method, payload.params);
             this.socket.send(JSON.stringify(payload));
         } catch (e) {
             if (cb) {

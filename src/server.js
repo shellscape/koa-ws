@@ -18,13 +18,16 @@ function KoaWebSocketServer (app, options) {
     this.app = app;
 
     // Container for methods
-    this.methods = {};
+    this._methods = {};
 
     // Container for sockets
-    this.sockets = {};
+    this._sockets = {};
 
     // Session to socket mapping
-    this.sessions = {};
+    this._sessions = {};
+
+    // Callback container for results
+    this._awaitingResults = {};
 }
 
 KoaWebSocketServer.prototype.listen = function (server) {
@@ -42,26 +45,46 @@ KoaWebSocketServer.prototype.listen = function (server) {
  * @param socket
  */
 KoaWebSocketServer.prototype.onConnection = function (socket) {
-    var server = this.server;
-    var methods = this.methods;
-    var sockets = this.sockets;
-    var sessions = this.sessions;
+    var server = this._server;
+    var methods = this._methods;
+    var sockets = this._sockets;
+    var sessions = this._sessions;
+    var awaitingResults = {};
 
-    socket.method = function (method, params) {
-        try {
-            var payload = { 
-                jsonrpc: '2.0', 
-                method: method
-            };
-            if (params) {
-                payload.params = params;
+    socket.method = function () {
+        var cb = null;
+        var payload = {
+            jsonrpc: '2.0',
+            method: arguments[0],
+            id: Math.random().toString(36).substr(2, 9) // Generate random id
+        };
+
+        if (typeof arguments[1] !== 'function' && typeof arguments[1] !== 'undefined') {
+            payload.params = arguments[1];
+            if (typeof arguments[2] === 'function') {
+                cb = arguments[2];
             }
-            debug('→ %s: %o', payload.method, payload.params);
+        } else if (typeof arguments[1] === 'function') {
+            cb = arguments[1];
+        }
+
+        if (cb) {
+            this._awaitingResults[payload.id] = function () {
+                cb.apply(this, arguments);
+                delete this._awaitingResults[payload.id];
+            }.bind(this);
+        }
+
+        try {
+            debug('→ (%s) %s: %o', payload.id, payload.method, payload.params);
             socket.send(JSON.stringify(payload));
         } catch (e) {
             console.error('Something went wrong: ', e.stack);
+            if (cb) {
+                cb.call(this, e);
+            }
         }
-    };
+    }.bind(this);
 
     socket.result = function (result) {
         try {
@@ -70,16 +93,16 @@ KoaWebSocketServer.prototype.onConnection = function (socket) {
                 result: result,
                 id: this.currentId
             };
-            debug('→ result for id %s: %o', payload.id, payload.result);
+            debug('→ (%s) Result: %o', payload.id, payload.result);
             socket.send(JSON.stringify(payload));
         } catch (e) {
             console.error('Something went wrong: ', e.stack);
         }
-    }
+    }.bind(this)
 
     socket.error = function (code, message) {
         try {
-            var data = {
+            var payload = {
                 jsonrpc: '2.0',
                 error: {
                     code: code,
@@ -87,8 +110,12 @@ KoaWebSocketServer.prototype.onConnection = function (socket) {
                 },
                 id: this.currentId
             };
-            debug('→', data);
-            socket.send(JSON.stringify(data));
+            if (payload.id) {
+                debug('→ (%s) Error %s: %s', payload.id, payload.error.code, payload.error.message);
+            } else {
+               debug('→ Error %s: %s', payload.id, payload.error.code, payload.error.message); 
+            }
+            socket.send(JSON.stringify(payload));
         }  catch (e) {
             console.error('Something went wrong: ', e.stack);
         }
@@ -121,13 +148,13 @@ KoaWebSocketServer.prototype.onConnection = function (socket) {
 
         if (!payload.jsonrpc && payload.jsonrpc !== '2.0') {
             debug('Wrong protocol: %s', payload.jsonrpc);
-            socket.error.apply(request, [-32600, 'Invalid Request']);
+            socket.error.apply(request, [-32600, 'Invalid request']);
             return;
         }
 
-        if (!payload.method) {
+        if (!payload.method && (!payload.result && !payload.id)) {
             debug('Missing method: %o', payload);
-            socket.error.apply(request, [-32600, 'Invalid Request']);
+            socket.error.apply(request, [-32600, 'Invalid request']);
             return;
         }
 
@@ -137,20 +164,31 @@ KoaWebSocketServer.prototype.onConnection = function (socket) {
             return;
         }
 
-        debug('← %s: %o', payload.method, payload.params);
-
-        if (typeof methods[payload.method] === 'function') {
-            try {
-                methods[payload.method].apply(request);
-            } catch (e) {
-                debug('Internal error: %s', e.stack);
-                socket.error.apply(request, [-32603, 'Internal error']);
+        if (payload.id && payload.error) {
+            debug('← (%s) Error %s: %o', payload.id, payload.error.code, payload.error.message);
+            if (typeof this._awaitingResults[payload.id] === 'function') {
+                this._awaitingResults[payload.id].apply(this, [payload.error]);
+            }
+        } else if (payload.id && payload.result) {
+            debug('← (%s) Result: %o', payload.id, payload.result);
+            if (typeof this._awaitingResults[payload.id] === 'function') {
+                this._awaitingResults[payload.id].apply(this, [null, payload.result]);
             }
         } else {
-            debug('Method not found: %s', payload.method, payload.params);
-            socket.error.apply(request, [-32601, 'Method not found']);
+            debug('← (%s) %s: %o', payload.id, payload.method, payload.params);
+            if (typeof methods[payload.method] === 'function') {
+                try {
+                    methods[payload.method].apply(request);
+                } catch (e) {
+                    debug('Internal error: %s', e.stack);
+                    socket.error.apply(request, [-32603, 'Internal error']);
+                }
+            } else {
+                debug('Method not found: %s', payload.method, payload.params);
+                socket.error.apply(request, [-32601, 'Method not found']);
+            }
         }
-    });
+    }.bind(this));
 
     // Let's try and connect the socket to session
     var sessionId = cookieHelper.get(socket, 'koa.sid', this.app.keys);
@@ -188,7 +226,7 @@ KoaWebSocketServer.prototype.register = function (method, generator, expose) {
     } else if (typeof method === 'string') {
         debug('Registering method: %s', method);
         generator.expose = expose || false;
-        this.methods[method] = co(generator);
+        this._methods[method] = co(generator);
     }
 };
 

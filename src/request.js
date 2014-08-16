@@ -10,7 +10,7 @@ function Request (socket, payload) {
 
 Request.prototype.error = function (code, message) {
     try {
-        var data = {
+        var payload = {
             jsonrpc: '2.0',
             error: {
                 code: code,
@@ -18,8 +18,8 @@ Request.prototype.error = function (code, message) {
             },
             id: this.currentId
         };
-        debug('→', data);
-        this.socket.send(JSON.stringify(data));
+        debug('→ Error %s: %o', payload.error.code, payload.error.message);
+        this.socket.send(JSON.stringify(payload));
     }  catch (e) {
         console.error('Something went wrong: ', e.stack);
     }
@@ -32,7 +32,7 @@ Request.prototype.result = function (result) {
             result: result,
             id: this.currentId
         };
-        debug('→ result for id %s: %o', payload.id, payload.result);
+        debug('→ (%s) Result: %o', payload.id, payload.result);
         this.socket.send(JSON.stringify(payload));
     } catch (e) {
         console.error('Something went wrong: ', e.stack);
