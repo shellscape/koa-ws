@@ -89,10 +89,8 @@ Client.prototype.onMessage = function (e) {
         var request = new Request(this, payload);
         if (typeof this._methods[payload.method] === 'undefined') {
             debug('← (%s) Missing handler', payload.method);
-            this.emit('error', { code: -1, message: 'Missing handler' });
         } else if (payload.error) {
             debug('← (%s) Error %s: %o', payload.method, payload.error.code, payload.error.message);
-            this.emit('error', payload.error);
             this._methods[payload.method].apply(
                 request,
                 [payload.error, payload.params]
@@ -112,10 +110,8 @@ Client.prototype.onMessage = function (e) {
                 this,
                 [payload.error]
             );
-            this.emit('error', payload.error);
         } else if (payload.error) {
             debug('← Error %s: %o', payload.error.code, payload.error.message);
-            this.emit('error', payload.error);
         } else if (payload.id && this._awaitingResults[payload.id]) {
             debug('← (%s) %o', payload.id, payload.result);
             this._awaitingResults[payload.id].apply(
