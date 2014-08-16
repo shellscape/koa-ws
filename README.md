@@ -42,6 +42,17 @@ Register a simple method on the server:
 
 Load the client library in the browser with require (`var koaws = require('koa-ws/client')`) or use the hosted version at `/koaws.js`.
 
+Register a method on the client to recieve the session:
+
+    koaws.register('session', function (err, payload) {
+        if (err) console.error('Something went wrong', err);
+        console.log(payload) // should include our session
+    });
+
+Connect to the server:
+
+    koaws.connect();
+
 Call the method from the client:
 
     koaws.method('hello', function (err, result) {
