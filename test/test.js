@@ -42,9 +42,9 @@ describe('koa-ws', function () {
 
     it ('should be able to register namespaced routes', function () {
         app.ws.register('user', {
-            create: function* () { this.respond('ok'); },
-            update: function* () { this.respond('ok'); },
-            delete: function* () { this.respond('ok'); }
+            create: function* () { this.result('ok'); },
+            update: function* () { this.result('ok'); },
+            delete: function* () { this.result('ok'); }
         });
 
         expect(app.ws.methods['user:create']).to.be.a('function');
@@ -64,6 +64,7 @@ describe('koa-ws', function () {
 
     it ('websocket client should be able to connect to server', function (done) {
         client = require('../src/client');
+        client.connect();
         client.on('open', function () {
             done();
         });
@@ -98,7 +99,7 @@ describe('koa-ws', function () {
             expect(payload.error.code).to.be.equal(-32700);
             done();
         });
-        client.send({ foo: 'bar' });
+        client.socket.send({ foo: 'bar' });
     });
 
     it ('should return error -32600 invalid request', function (done) {
@@ -107,7 +108,7 @@ describe('koa-ws', function () {
             expect(payload.error.code).to.be.equal(-32600);
             done();
         });
-        client.send(JSON.stringify({ foo: 'bar' }));
+        client.socket.send(JSON.stringify({ foo: 'bar' }));
     });
 
     it ('should return error -32602 invalid params', function (done) {

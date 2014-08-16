@@ -23,10 +23,15 @@ if (typeof WebSocket === 'undefined') {
     var WebSocket = require('ws');
 }
 
-var scriptElements = document.getElementsByTagName('script');
-var guessedAddress = typeof __resourceQuery === "string" && __resourceQuery ?
-    __resourceQuery.substr(1) :
-    scriptElements[scriptElements.length-1].getAttribute("src").replace(/\/[^\/]+$/, "");
+try {
+    var scriptElements = document.getElementsByTagName('script');
+    var guessedAddress = typeof __resourceQuery === "string" && __resourceQuery ?
+        __resourceQuery.substr(1) :
+        scriptElements[scriptElements.length-1].getAttribute("src").replace(/\/[^\/]+$/, "");
+} catch (e) {
+    var guessedAddress = typeof __resourceQuery === "string" && __resourceQuery ?
+        __resourceQuery.substr(1) : 'localhost:3000';
+}
 
 function Client() {
     // Init EventEmitter
