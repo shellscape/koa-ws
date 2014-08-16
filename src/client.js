@@ -85,15 +85,23 @@ Client.prototype.onClose = function (e) {
 
 Client.prototype.onMessage = function (e) {
     var payload = JSON.parse(e.data || e);
-    if (payload.method) {
-        debug('← %s: %o', payload.method, payload.params);
+    if (payload.method) { 
         var request = new Request(this, payload);
-        if (payload.error) {
-            debug('Got error for method %s, code %s: %s', 
-                payload.method, payload.error.code, payload.error.message);
+        if (typeof this._methods[payload.method] === 'undefined') {
+            debug('← (%s) Missing handler', payload.method);
+            this.emit('error', { code: -1, message: 'Missing handler' });
+        } else if (payload.error) {
+            debug('← (%s) Error %s: %o', payload.method, payload.error.code, payload.error.message);
+            this.emit('error', payload.error);
             this._methods[payload.method].apply(
                 request,
-                payload.params
+                [payload.error, payload.params]
+            ); 
+        } else {
+            debug('← (%s) %o', payload.method, payload.params);
+            this._methods[payload.method].apply(
+                request,
+                [null, payload.params]
             ); 
         }
     } else {
@@ -104,10 +112,10 @@ Client.prototype.onMessage = function (e) {
                 this,
                 [payload.error]
             );
+            this.emit('error', payload.error);
         } else if (payload.error) {
             debug('← Error %s: %o', payload.error.code, payload.error.message);
-            //client.emit('error', payload.error);
-            //console.error('Error %s: %s', payload.error.code, payload.error.message);
+            this.emit('error', payload.error);
         } else if (payload.id && this._awaitingResults[payload.id]) {
             debug('← (%s) %o', payload.id, payload.result);
             this._awaitingResults[payload.id].apply(
@@ -142,9 +150,10 @@ Client.prototype.connect = function (address) {
 
 // Register a client-side method
 Client.prototype.register = function (method, handler) {
-    if (typeof method === 'object') {
-        for (var name in methods) {
-            this.register(name, method[name]);
+    if (typeof handler === 'object') {
+        for (var name in handler) {
+            debug('Registering method: %s:%s', method, name);
+            this._methods[method + ':' + name] = handler[name];
         }
     } else {
         debug('Registering method: %s', method);
