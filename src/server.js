@@ -20,6 +20,9 @@ function KoaWebSocketServer (app, options) {
     // Save ref to app
     this.app = app;
 
+    // Container for options
+    this._options = options || {};
+
     // Container for methods
     this._methods = {};
 
@@ -141,6 +144,14 @@ KoaWebSocketServer.prototype.onConnection = function (socket) {
     socket.on('message', function (message) {
         protocol.apply(this, [debug, socket, message]);
     }.bind(this));
+
+    // Send options
+    socket.method('options', this._options);
+
+    // Send initial thump
+    if (this._options.heartbeat) {
+        socket.send('--thump--');
+    }
 
     // Let's try and connect the socket to session
     var sessionId = cookieHelper.get(socket, 'koa.sid', this.app.keys);

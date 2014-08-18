@@ -55,10 +55,10 @@ function Client() {
     };
 
     // Options container
-    this.options = null;
+    this._options = {};
 
     // Session container
-    this.session = null;
+    this._session = null;
 
     // On WebSocket open
     this.on('open', this.onOpen);
@@ -68,6 +68,17 @@ function Client() {
 
     // On WebSocket message
     this.on('message', this.onMessage);
+
+    var _this = this;
+    // Listen for options
+    this.register('options', function () {
+        _this._options = this.params;
+    });
+
+    // Listen for session
+    this.register('session', function () {
+        _this._session = this.params;
+    });
 };
 
 // Inherit prototype from EventEmitter
@@ -173,19 +184,6 @@ Client.prototype.method = function () {
 };
 
 var clientInstance = new Client();
-
-clientInstance.register('options', function (err, data) {
-    this.options = data;
-    if (data.heartbeatInterval > 0) {
-        setInterval(function () {
-            this.socket.send('--thump--');
-        }.bind(this), data.heartbeatInterval);
-    }
-});
-
-clientInstance.register('session', function (err, data) {
-    this.session = data;
-});
 
 // Expose the client
 if (typeof module !== 'undefined' && module.exports) {

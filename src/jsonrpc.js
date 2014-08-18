@@ -4,7 +4,9 @@ module.exports = function (debug, socket, data) {
     // If heartbeat, respond
     if (data === '--thump--') {
         debug('← Thump!');
-        socket.send('--thump--');
+        setTimeout(function () {
+            socket.send('--thump--');
+        }.bind(this), this._options.heartbeatInterval || 5000);
         return;
     }
 

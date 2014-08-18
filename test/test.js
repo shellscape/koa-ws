@@ -31,7 +31,10 @@ describe('koa-ws', function () {
 
     it('expect to be able to attach middleware to app', function () {
         var middleware = require('../src/middleware');
-        app.use(middleware(app));
+        app.use(middleware(app, {
+            heartbeatInterval: 500,
+            heartbeat: false
+        }));
         expect(app).to.have.property('ws');
     });
 
@@ -172,6 +175,15 @@ describe('koa-ws', function () {
                 if (err) throw err;
                 done();
             });
+    });
+
+    it('expect heartbeat response from client', function (done) {
+        socket.once('message', function (message) {
+            if (message === '--thump--') {
+                done();
+            }
+        });
+        socket.send('--thump--');
     });
 
 });
