@@ -64,10 +64,10 @@ Call the method from the client:
 
 #### Options
 
-#### heartbeat (default: true)
+##### heartbeat (default: true)
 If server/client should send hearbeats to eachother
 
-#### heartbeatInterval (default: 5000)
+##### heartbeatInterval (default: 5000)
 How often the heartbeat should be sent
 
 ##### serveClientFile (default: true)
