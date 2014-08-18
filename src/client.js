@@ -8,8 +8,8 @@ var util = require('util');
 // EventEmitter
 var EventEmitter = require('events').EventEmitter;
 
-// Request object
-var Request = require('./request');
+// Protocol
+var protocol = require('./jsonrpc');
 
 // Debug output
 var debug;
@@ -54,6 +54,12 @@ function Client() {
         message: []
     };
 
+    // Options container
+    this.options = null;
+
+    // Session container
+    this.session = null;
+
     // On WebSocket open
     this.on('open', this.onOpen);
 
@@ -83,43 +89,8 @@ Client.prototype.onClose = function (e) {
     debug('WebSocket closed');
 };
 
-Client.prototype.onMessage = function (e) {
-    var payload = JSON.parse(e.data || e);
-    if (payload.method) { 
-        var request = new Request(this.socket, payload);
-        if (typeof this._methods[payload.method] === 'undefined') {
-            debug('← (%s) Missing handler', payload.method);
-        } else if (payload.error) {
-            debug('← (%s) Error %s: %o', payload.method, payload.error.code, payload.error.message);
-            this._methods[payload.method].apply(
-                request,
-                [payload.error, payload.params]
-            ); 
-        } else {
-            debug('← (%s) %s: %o', payload.id, payload.method, payload.params);
-            this._methods[payload.method].apply(
-                request,
-                [null, payload.params]
-            ); 
-        }
-    } else {
-
-        if (payload.error && payload.id && this._awaitingResults[payload.id]) {
-            debug('← (%s) Error %s: %o', payload.id, payload.error.code, payload.error.message);
-            this._awaitingResults[payload.id].apply(
-                this,
-                [payload.error]
-            );
-        } else if (payload.error) {
-            debug('← Error %s: %o', payload.error.code, payload.error.message);
-        } else if (payload.id && this._awaitingResults[payload.id]) {
-            debug('← (%s) %o', payload.id, payload.result);
-            this._awaitingResults[payload.id].apply(
-                this, 
-                [null, payload.result]
-            );
-        }
-    }
+Client.prototype.onMessage = function (data) {
+    protocol.apply(this, [debug, this.socket, data]);
 };
 
 Client.prototype.connect = function (address) {
@@ -145,14 +116,18 @@ Client.prototype.connect = function (address) {
 };
 
 // Register a client-side method
-Client.prototype.register = function (method, handler) {
-    if (typeof handler === 'object') {
-        for (var name in handler) {
-            debug('Registering method: %s:%s', method, name);
-            this._methods[method + ':' + name] = handler[name];
+Client.prototype.register = function (method, handler, expose) {
+    if (typeof method === 'object') {
+        for (var m in method) {
+            this.register(m, method[m]);
         }
-    } else {
+    } else if (typeof handler === 'object') {
+        for (var m in handler) {
+            this.register(method + ':' + m, handler[m]);
+        }
+    } else if (typeof method === 'string') {
         debug('Registering method: %s', method);
+        handler.expose = expose || false;
         this._methods[method] = handler;
     }
 };
@@ -198,6 +173,19 @@ Client.prototype.method = function () {
 };
 
 var clientInstance = new Client();
+
+clientInstance.register('options', function (err, data) {
+    this.options = data;
+    if (data.heartbeatInterval > 0) {
+        setInterval(function () {
+            this.socket.send('--thump--');
+        }.bind(this), data.heartbeatInterval);
+    }
+});
+
+clientInstance.register('session', function (err, data) {
+    this.session = data;
+});
 
 // Expose the client
 if (typeof module !== 'undefined' && module.exports) {

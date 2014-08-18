@@ -5,6 +5,9 @@ var cookieHelper = require('koa-ws-cookie-helper');
 // Request object
 var Request = require('./request');
 
+// Protocol
+var protocol = require('./jsonrpc');
+
 // Debug output
 var debug = require('debug')('koa-ws:server');
 
@@ -136,67 +139,16 @@ KoaWebSocketServer.prototype.onConnection = function (socket) {
     });
 
     socket.on('message', function (message) {
-        try {
-            var payload = JSON.parse(message);
-        } catch (e) {
-            debug('Parse error: %s', e.stack);
-            socket.error(-32700, 'Parse error');
-            return;
-        }
-
-        var request = new Request(socket, payload);
-
-        if (!payload.jsonrpc && payload.jsonrpc !== '2.0') {
-            debug('Wrong protocol: %s', payload.jsonrpc);
-            socket.error.apply(request, [-32600, 'Invalid request']);
-            return;
-        }
-
-        if (!payload.method && (!payload.result && !payload.id)) {
-            debug('Missing method: %o', payload);
-            socket.error.apply(request, [-32600, 'Invalid request']);
-            return;
-        }
-
-        if (typeof payload.params !== 'undefined' && typeof payload.params !== 'object' && !Array.isArray(payload.params)) {
-            debug('Invalid params: %o', payload.params);
-            socket.error.apply(request, [-32602, 'Invalid params']);
-            return;
-        }
-
-        if (payload.id && payload.error) {
-            debug('← (%s) Error %s: %o', payload.id, payload.error.code, payload.error.message);
-            if (typeof this._awaitingResults[payload.id] === 'function') {
-                this._awaitingResults[payload.id].apply(this, [payload.error]);
-            }
-        } else if (payload.id && payload.result) {
-            debug('← (%s) Result: %o', payload.id, payload.result);
-            if (typeof this._awaitingResults[payload.id] === 'function') {
-                this._awaitingResults[payload.id].apply(this, [null, payload.result]);
-            }
-        } else {
-            debug('← (%s) %s: %o', payload.id, payload.method, payload.params);
-            if (typeof methods[payload.method] === 'function') {
-                try {
-                    methods[payload.method].apply(request);
-                } catch (e) {
-                    debug('Internal error: %s', e.stack);
-                    socket.error.apply(request, [-32603, 'Internal error']);
-                }
-            } else {
-                debug('Method not found: %s', payload.method, payload.params);
-                socket.error.apply(request, [-32601, 'Method not found']);
-            }
-        }
+        protocol.apply(this, [debug, socket, message]);
     }.bind(this));
 
     // Let's try and connect the socket to session
     var sessionId = cookieHelper.get(socket, 'koa.sid', this.app.keys);
     if (sessionId) {
-        if (typeof this.sockets[sessionId] === 'undefined') {
-            this.sockets[sessionId] = [];
+        if (typeof this._sockets[sessionId] === 'undefined') {
+            this._sockets[sessionId] = [];
         }
-        this.sockets[sessionId].push(socket);
+        this._sockets[sessionId].push(socket);
 
         if (this.app.sessionStore) {
             var _this = this;

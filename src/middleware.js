@@ -11,6 +11,7 @@ module.exports = function (app, passedOptions) {
     var options = {
         serveClientFile: true,
         clientFilePath: '/koaws.js',
+        heartbeatInterval: 5000
     };
     // Override with passed options
     objectAssign(options, passedOptions || {});
