@@ -1,7 +1,6 @@
 var Request = require('./request');
 
 module.exports = function (debug, socket, data) {
-    debug('Got data: %o', data);
     // If heartbeat, respond
     if (data === '--thump--') {
         debug('← Thump!');
