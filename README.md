@@ -27,7 +27,9 @@ Add realtime to your koa app with a couple of lines:
 
     var options = {
         serveClientFile: true,
-        clientFilePath: '/koaws.js'
+        clientFilePath: '/koaws.js',
+        heartbeat: true,
+        heartbeatInterval: 5000
     };
 
     app.use(koaws(app, options));
@@ -61,6 +63,12 @@ Call the method from the client:
     });
 
 #### Options
+
+#### heartbeat (default: true)
+If server/client should send hearbeats to eachother
+
+#### heartbeatInterval (default: 5000)
+How often the heartbeat should be sent
 
 ##### serveClientFile (default: true)
 Will try and serve the client library file when `this.path` matches the `clientFilePath` option.
