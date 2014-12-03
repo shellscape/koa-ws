@@ -199,10 +199,12 @@ KoaWebSocketServer.prototype.register = function (method, generator, expose) {
  * @param params object
  */
 KoaWebSocketServer.prototype.broadcast = function (method, params) {
-    for (var i in this.server.clients) {
-        this.server.clients[i].method(method, params, function (err) {
-            debug('Could not send message', data, err);
-        });
+    if(this.server && this.server.clients) {
+        for (var i in this.server.clients) {
+            this.server.clients[i].method(method, params, function (err) {
+                debug('Could not send message', data, err);
+            });
+        }
     }
 }
 
