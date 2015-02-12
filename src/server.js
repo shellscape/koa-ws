@@ -38,7 +38,7 @@ function KoaWebSocketServer (app, options) {
 
 KoaWebSocketServer.prototype.listen = function (server) {
     // Create WebSocketServer
-    this.server = new WebSocketServer({ 
+    this.server = new WebSocketServer({
         server: server
     });
 
@@ -95,7 +95,7 @@ KoaWebSocketServer.prototype.onConnection = function (socket) {
     socket.result = function (result) {
         try {
             var payload = {
-                jsonrpc: '2.0', 
+                jsonrpc: '2.0',
                 result: result,
                 id: this.currentId
             };
@@ -119,7 +119,7 @@ KoaWebSocketServer.prototype.onConnection = function (socket) {
             if (payload.id) {
                 debug('→ (%s) Error %s: %s', payload.id, payload.error.code, payload.error.message);
             } else {
-               debug('→ Error %s: %s', payload.id, payload.error.code, payload.error.message); 
+               debug('→ Error %s: %s', payload.id, payload.error.code, payload.error.message);
             }
             socket.send(JSON.stringify(payload));
         }  catch (e) {
@@ -163,9 +163,9 @@ KoaWebSocketServer.prototype.onConnection = function (socket) {
 
         if (this.app.sessionStore) {
             var _this = this;
-            (co(function* () {
+            (co.wrap(function* () {
                 socket.session = yield _this.app.sessionStore.get('koa:sess:' + sessionId);
-                socket.method('session', socket.session);   
+                socket.method('session', socket.session);
             })());
         }
     }
@@ -189,7 +189,7 @@ KoaWebSocketServer.prototype.register = function (method, generator, expose) {
     } else if (typeof method === 'string') {
         debug('Registering method: %s', method);
         generator.expose = expose || false;
-        this._methods[method] = co(generator);
+        this._methods[method] = co.wrap(generator);
     }
 };
 

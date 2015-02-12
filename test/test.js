@@ -140,7 +140,7 @@ describe('koa-ws', function () {
             expect(payload.error.code).to.be.equal(-32700);
             done();
         });
-        client.socket.send({ foo: 'bar' });
+        client.socket.send("{ foo: 'bar' }");
     });
 
     it('expect server to return error -32600 invalid request', function (done) {
