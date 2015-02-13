@@ -40,9 +40,9 @@
     "coveralls": "^2.11.1",
     "istanbul": "git://github.com/mekwall/istanbul.git",
     "koa": "^0.17.0",
-    "koa-generic-session": "^1.2.0",
+    "koa-generic-session": "^1.6.0",
     "mocha": "^2.1.0",
     "mocha-lcov-reporter": "0.0.1",
-    "supertest": "^0.13.0"
+    "supertest": "^0.15.0"
   }
 }
