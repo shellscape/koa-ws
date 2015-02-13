@@ -1,15 +1,36 @@
-[![Build Status](https://secure.travis-ci.org/mekwall/koa-ws.png)](http://travis-ci.org/mekwall/koa-ws) [![npm version](https://badge.fury.io/js/koa-ws.svg)](http://badge.fury.io/js/koa-ws) [![Coverage Status](https://img.shields.io/coveralls/mekwall/koa-ws.svg)](https://coveralls.io/r/mekwall/koa-ws) [![Dependency Status](https://david-dm.org/mekwall/koa-ws.png)](https://david-dm.org/mekwall/koa-ws)
-
 # koa-ws
 
-> Empower your koa.js application with realtime.
+[![NPM version][npm-image]][npm-url]
+[![build status][travis-image]][travis-url]
+[![Coveralls][coveralls-image]][coveralls-url]
+[![David deps][david-image]][david-url]
+[![node version][node-image]][node-url]
+[![npm download][download-image]][download-url]
+[![Gittip][gittip-image]][gittip-url]
+
+[npm-image]: https://img.shields.io/npm/v/koa-ws.svg?style=flat-square
+[npm-url]: https://npmjs.org/package/koa-ws
+[travis-image]: https://img.shields.io/travis/mekwall/koa-ws.svg?style=flat-square
+[travis-url]: https://travis-ci.org/mekwall/koa-ws
+[coveralls-image]: https://img.shields.io/coveralls/mekwall/koa-ws.svg?style=flat-square
+[coveralls-url]: https://coveralls.io/r/mekwall/koa-ws?branch=master
+[david-image]: https://img.shields.io/david/mekwall/koa-ws.svg?style=flat-square
+[david-url]: https://david-dm.org/mekwall/koa-ws
+[node-image]: https://img.shields.io/badge/node.js-%3E=_0.11-red.svg?style=flat-square
+[node-url]: http://nodejs.org/download/
+[download-image]: https://img.shields.io/npm/dm/koa-ws.svg?style=flat-square
+[download-url]: https://npmjs.org/package/koa-ws
+[gittip-image]: https://img.shields.io/gittip/mekwall.svg?style=flat-square
+[gittip-url]: https://www.gittip.com/mekwall/
+
+Empower your koa.js application with realtime, using the battle tested ws library.
 
 ## Features
 
 * Uses jsonrpc 2.0 protocol per default
 * Uses generators as method handlers
 * Simple API to register namespaced methods
-* Connects your sockets to the users session
+* Shared koa session between HTTP and WebSocket
 
 ## Quick start
 
