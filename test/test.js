@@ -6,7 +6,6 @@ var request = require('supertest');
 var koa = require('koa');
 var http = require('http');
 var session = require('koa-generic-session');
-var Promise = require('promise');
 
 // Setup koa app
 var app = koa();
