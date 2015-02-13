@@ -79,7 +79,7 @@ function Client() {
     this.register('session', function () {
         _this._session = this.params;
     });
-};
+}
 
 // Inherit prototype from EventEmitter
 util.inherits(Client, EventEmitter);
@@ -119,21 +119,28 @@ Client.prototype.connect = function (address) {
                 this.emit.apply(this, [type].concat(Array.prototype.slice.call(arguments)));
             }.bind(this);
             if (this.socket.on) {
-                this.socket.on(type, handler)
+                this.socket.on(type, handler);
             } else if (!this.socket['on' + type]) {
                 this.socket['on' + type] = handler;
             }
         }.bind(this));
 };
 
+Client.prototype.disconnect = function (code, reason) {
+    if (this.socket) {
+        this.socket.close(code, reason);
+    }
+};
+
 // Register a client-side method
 Client.prototype.register = function (method, handler, expose) {
+    var m;
     if (typeof method === 'object') {
-        for (var m in method) {
+        for (m in method) {
             this.register(m, method[m]);
         }
     } else if (typeof handler === 'object') {
-        for (var m in handler) {
+        for (m in handler) {
             this.register(method + ':' + m, handler[m]);
         }
     } else if (typeof method === 'string') {
