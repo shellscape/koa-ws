@@ -59,7 +59,7 @@
     "browser"       : true,     // Web Browser (window, document, etc)
     "devel"         : true,     // Development/debugging (alert, confirm, etc)
     "node"          : true,     // Node.js
-    "nonstandard"   : false     // Widely adopted globals (escape, unescape, etc)
+    "nonstandard"   : false,     // Widely adopted globals (escape, unescape, etc)
 
     // Custom Globals
     "globals": {
