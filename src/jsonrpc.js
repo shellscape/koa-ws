@@ -1,6 +1,10 @@
 var Request = require('./request');
 
 module.exports = function (debug, socket, data) {
+    if (typeof data != 'string') {
+        data = data.data;
+    }
+
     // If heartbeat, respond
     if (data === '--thump--') {
         debug('← Thump!');
