@@ -241,3 +241,9 @@ describe('protocol', function () {
     });
 
 });
+
+describe('http server', function () {
+    it('expect close connection', function () {
+        app.server.close();
+    });
+});
