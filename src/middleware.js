@@ -22,6 +22,9 @@ module.exports = function (app, passedOptions) {
         debug('Attaching server...')
         app.server = oldListen.apply(app, arguments);
         app.ws.listen(app.server);
+        app.address = function() {
+            return app.server.address();
+        }
         return app;
     };
 

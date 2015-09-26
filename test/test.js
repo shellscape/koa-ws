@@ -42,6 +42,13 @@ describe('koa-ws', function () {
             expect(app).to.have.property('ws');
         });
 
+        it('expect provide address', function () {
+            var address = app.listen().address();
+            expect(address.address).to.equal('::');
+            expect(address.family).to.be.a('string');
+            expect(address.port).to.be.a('number');
+        });
+
         it('expect to be able to register a simple server method', function () {
             app.ws.register('hello', function* () {
                 this.result('world');
