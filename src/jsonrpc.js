@@ -1,6 +1,19 @@
 var Request = require('./request');
 
-module.exports = function (debug, socket, data) {
+module.exports = function(debug, socket, data) {
+    try {
+        return request.call(this, debug, socket, data);
+    } catch (e){
+        console.error('Something went wrong: ', e.stack);
+        return;
+    }
+};
+
+function request(debug, socket, data) {
+    if (typeof data != 'string') {
+        data = data.data;
+    }
+
     // If heartbeat, respond
     if (data === '--thump--') {
         debug('← Thump!');
@@ -85,4 +98,5 @@ module.exports = function (debug, socket, data) {
         socket.error.apply(request, [-32601, 'Method not found']);
     }
 
-};
+    return;
+}
