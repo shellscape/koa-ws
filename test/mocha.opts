@@ -1,5 +1,0 @@
---require co-mocha
---reporter spec
---ui bdd
---globals callback*
---timeout 6000

@@ -1,50 +1,79 @@
 {
   "name": "koa-ws",
   "version": "1.0.1",
-  "keywords": [
-    "koa",
-    "middleware",
-    "websocket",
-    "session"
-  ],
-  "description": "Integrates ws with koa, featuring shared sessions and json-rpc 2.0 protocol",
-  "author": "Marcus Ekwall <marcus.ekwall@gmail.com>",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/mekwall/koa-ws/issues"
+  "description": "Seamless WebSocket integration for Koa2",
+  "license": "MPL-2.0",
+  "repository": "shellscape/koa-ws",
+  "author": "shellscape",
+  "homepage": "https://github.com/shellscape/koa-ws",
+  "bugs": "https://github.com/shellscape/koa-ws/issues",
+  "bin": "",
+  "main": "lib/index.js",
+  "engines": {
+    "node": ">=8.0.0"
   },
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/mekwall/koa-ws.git"
-  },
-  "homepage": "https://github.com/mekwall/koa-ws",
-  "main": "./src/middleware.js",
-  "browser": "./src/client.js",
   "scripts": {
-    "test": "mocha --harmony",
-    "test-cov": "node --harmony node_modules/istanbul/lib/cli.js cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | node --harmony ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
+    "ci:coverage": "nyc npm run test && nyc report --reporter=text-lcov > coverage.lcov",
+    "ci:lint": "npm run lint && npm run security",
+    "ci:lint:commits": "commitlint --from=${CIRCLE_BRANCH} --to=${CIRCLE_SHA1}",
+    "ci:test": "npm run test -- --verbose",
+    "commitlint": "commitlint",
+    "commitmsg": "commitlint -e $GIT_PARAMS",
+    "lint": "eslint --fix --cache lib test",
+    "lint-staged": "lint-staged",
+    "security": "npm audit",
+    "test": "ava"
+  },
+  "files": [
+    "lib/",
+    "README.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "koa": "^2.5.3"
   },
   "dependencies": {
-    "co": "^4.3.1",
-    "debug": "^2.1.1",
-    "keygrip": "^1.0.1",
-    "koa-ws-cookie-helper": "^1.0.3",
-    "object-assign": "^2.0.0",
-    "replacestream": "^2.0.0",
-    "ws": "^0.7.1"
+    "ws": "^7.1.0"
   },
   "devDependencies": {
-    "chai": "^2.0.0",
-    "co-mocha": "^1.0.1",
-    "cov": "^0.1.3",
-    "coveralls": "^2.11.1",
-    "istanbul": "git://github.com/mekwall/istanbul.git",
-    "koa": "^0.17.0",
-    "koa-generic-session": "^1.6.0",
-    "gulp": "^3.9.0",
-    "gulp-mocha": "^2.1.3",
-    "mocha": "^2.1.0",
-    "mocha-lcov-reporter": "0.0.1",
-    "supertest": "^0.15.0"
-  }
+    "@commitlint/cli": "^8.1.0",
+    "@commitlint/config-conventional": "^8.0.0",
+    "ava": "^2.2.0",
+    "eslint-config-shellscape": "^2.1.0",
+    "get-port": "4.2.0",
+    "koa": "^2.5.3",
+    "lint-staged": "^9.2.0",
+    "nyc": "^14.1.1",
+    "pre-commit": "^1.2.2"
+  },
+  "keywords": [
+    "koa",
+    "koa2",
+    "middleware",
+    "socket",
+    "websocket",
+    "websockets"
+  ],
+  "ava": {
+    "files": [
+      "!**/fixtures/**",
+      "!**/helpers/**",
+      "!**/recipes/**"
+    ]
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "git add"
+    ]
+  },
+  "nyc": {
+    "include": [
+      "lib/**/*.js"
+    ],
+    "exclude": [
+      "test/"
+    ]
+  },
+  "pre-commit": "lint-staged"
 }
